@@ -40,9 +40,6 @@ From there:
 Each visit also shows a random **tip of the day** at the bottom —
 little shortcuts worth learning one at a time.
 
-> Tip: your `<leader>` key is **Space**. So when you see `<leader>ff`,
-> press **Space**, then `f`, then `f`.
-
 On first launch, also run `:Mason` to install language servers
 (Python, JavaScript, Rust, Go, C, Lua, and more). Pick what you use —
 everything else is optional.
