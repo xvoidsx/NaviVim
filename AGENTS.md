@@ -7,7 +7,7 @@
 
 ## 1. What this is
 
-- **Navi** is a Debian-based Linux distro. Target user includes people coming from **VSCode**.
+- **Navi** is a Debian-based Linux distro. Target user includes people coming from **vanilla Vim** and **VSCode**.
 - The default in-terminal IDE is **hand-rolled Neovim 0.11+** with `lazy.nvim`. No distro framework (no LazyVim / NvChad / LunarVim).
 - Doctrine: **editor-first, tmux-enhanced**. Neovim must be fully usable standalone; it shines inside tmux.
 - Classic `vim` (9.1) stays installed as fallback. Legacy `~/.vimrc` (11 lines: number, mouse, hlsearch, incsearch, wrap, autoindent, cursorline) is preserved conceptually in `lua/config/options.lua`.
