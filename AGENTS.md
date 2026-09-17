@@ -1,16 +1,33 @@
-# AGENTS.md — Navi in-terminal IDE (Neovim)
+# AGENTS.md — NaviVim
 
-> Share this file with humans and AI agents working on Navi Linux.
-> It is the contract for our default terminal IDE experience.
+> Share this file with humans and AI agents working on NaviVim.
+> It is the contract for this project's editing experience.
 > Source of truth: the **NaviVim repo** (`~/NaviVim`, live at `~/.config/nvim`
 > via symlink). Edit the repo, never the symlink target directly.
 
 ## 1. What this is
 
-- **Navi** is a Debian-based Linux distro. Target user includes people coming from **vanilla Vim** and **VSCode**.
-- The default in-terminal IDE is **hand-rolled Neovim 0.11+** with `lazy.nvim`. No distro framework (no LazyVim / NvChad / LunarVim).
-- Doctrine: **editor-first, tmux-enhanced**. Neovim must be fully usable standalone; it shines inside tmux.
-- Classic `vim` (9.1) stays installed as fallback. Legacy `~/.vimrc` (11 lines: number, mouse, hlsearch, incsearch, wrap, autoindent, cursorline) is preserved conceptually in `lua/config/options.lua`.
+NaviVim is the default text-editing experience for Navi — a minimal,
+Debian-based, tiling-focused Linux environment. The distro has its own
+AGENTS.md and handbook; everything below is about NaviVim.
+
+NaviVim's ambition is a premier, best-in-class Neovim experience: an
+in-terminal IDE that feels like a cohesive whole with the system it ships
+on — welcoming to newcomers (especially people arriving from VSCode)
+without dumbing anything down for veterans. Concretely that means:
+
+- **Hand-rolled Neovim 0.11+** with `lazy.nvim`. No framework distros
+  (no LazyVim / NvChad / LunarVim) — every plugin is chosen on purpose,
+  one file per feature, and the whole config stays readable enough to
+  learn from.
+- **Doctrine: editor-first, tmux-enhanced.** Neovim must be fully usable
+  standalone; it shines inside tmux, and the two navigate as one.
+- **Discoverable over memorizable.** Leader-key menus, which-key popups,
+  dashboard shortcut buttons, and a tip-of-the-day mean a first-time user
+  can explore instead of studying.
+- Classic `vim` remains available outside this repo as a fallback. The
+  legacy `~/.vimrc` (11 lines: number, mouse, hlsearch, incsearch, wrap,
+  autoindent, cursorline) lives on conceptually in `lua/config/options.lua`.
 
 ## 2. Layout
 
@@ -33,7 +50,7 @@
   lua/plugins/editing.lua         -> Comment, autopairs, surround, todo-comments
   lua/plugins/terminal.lua        -> toggleterm + vim-tmux-navigator + persistence
   lua/plugins/theme.lua           -> reads ~/.config/omaterm/nvim.theme, default nightshadeNeon
-  colors/nightshadeNeon.lua       -> Navi house colorscheme (#ff10f0 #39ff14 #00ffff #ff3131 #ffffff on #000000)
+  colors/nightshadeNeon.lua       -> house colorscheme (#ff10f0 #39ff14 #00ffff #ff3131 #ffffff on #000000)
   after/plugin/transparency.lua   -> startup transparency trigger
   after/syntax/uxntal.vim         -> ported from ~/.vim/pack/plugins/start/uxntal.vim
   after/ftdetect/uxntal.vim       -> ported uxntal filetype detection
@@ -63,7 +80,7 @@ Pressing Space and waiting shows which-key with every option.
 | Session | `<leader>qs` restore | persistence.nvim |
 | Relative numbers | `<leader>un` toggles | default ON with number |
 
-## 4. Dependencies (for Navi packaging)
+## 4. Dependencies (for distribution)
 
 - Must: `neovim>=0.11`, `git`, `ripgrep`, `fd-find` (binary `fd`; shim `fdfind` if needed), `node`, `python3`, `make`/`gcc` (telescope-fzf-native, treesitter), Nerd Font.
 - Neovim source: Debian stable ships 0.10 (too old — mason-lspconfig v2 and
@@ -74,13 +91,13 @@ Pressing Space and waiting shows which-key with every option.
   prefers `doas`, falling back to `sudo`).
 - Optional but expected: `tmux`, `lazygit`, language servers via `:Mason` (lua_ls, pyright, ts_ls, rust_analyzer, gopls, clangd, bashls, jsonls, yamlls), formatters (stylua, shfmt, black/isort, prettier), linters (flake8, shellcheck).
 - Seed path for ISO: `/etc/skel/.config/nvim` (copy of this config). Theme override: `/etc/skel/.config/omaterm/nvim.theme`.
-  `install.sh --system` (run as root from the Navi installer) handles the whole
-  distro install: tarball to `/usr/local`, skel seed, `editor`/`vi` alternatives,
+  `install.sh --system` (run as root from the distro installer) handles the whole
+  system install: tarball to `/usr/local`, skel seed, `editor`/`vi` alternatives,
   `EDITOR`/`VISUAL` via `/etc/profile.d`, and a deterministic `Lazy! restore`
   from `lazy-lock.json` as a build-time smoke test. User mode (`./install.sh`)
   rolls forward with `Lazy! sync` — commit the updated lockfile.
 - uxntal rule: keep `~/.vim/pack/plugins/start/uxntal.vim` AND `after/syntax|ftdetect/uxntal.vim` in sync.
-- Version pins: `nvim-treesitter/*` stays on `branch = "master"` (legacy `configs` API; migrating to `main` needs a config rewrite). All other 0.10-era pins are dropped now that Navi requires 0.11+.
+- Version pins: `nvim-treesitter/*` stays on `branch = "master"` (legacy `configs` API; migrating to `main` needs a config rewrite). All other 0.10-era pins are dropped now that NaviVim requires 0.11+.
 
 ## 5. Commands agents should use
 
@@ -111,6 +128,6 @@ Test matrix before shipping: open `.py .js .ts .lua .c .md .tal` files, toggle s
 
 - `nvim-dap + nvim-dap-ui` for debugging (Python/JS/C first).
 - Migrate `nvim-treesitter` from `master` to `main` branch (new API).
-- `snacks.picker` or `fzf-lua` evaluation if Telescope feels slow on Navi hardware.
-- Navi `tmux.conf` with matching `C-h/j/k/l` + session-restore + statusline theme sync.
-- `:NaviWelcome` command linking to distro docs.
+- `snacks.picker` or `fzf-lua` evaluation if Telescope feels slow on low-end hardware.
+- A matching `tmux.conf` with `C-h/j/k/l` passthrough + session-restore + statusline theme sync.
+- `:NaviVimWelcome` command linking to the handbook.
