@@ -19,6 +19,13 @@
 # Env knobs:
 #   NVIM_VERSION=x.y.z   install a specific version (default: latest stable)
 #   PREFIX=...           install prefix (default: $HOME/.local, or /usr/local with --system)
+#   NVIM_TARBALL=path    use a local neovim release tarball instead of
+#                        downloading one (distro installers staging it offline)
+#   NAVIVIM_SKIP_NVIM=1  skip the neovim tarball install entirely (binary
+#                        already in place — makes re-runs cheap/idempotent)
+#   NAVIVIM_SKIP_PLUGINS=1
+#                        skip the headless plugin restore/sync (offline
+#                        installs; plugins sync on first nvim launch)
 #
 # Navi ISO integration: call `./install.sh --system` (as root, with network)
 # from the distro's initial installer script. Per-user plugin sync and Mason
@@ -28,6 +35,9 @@ set -euo pipefail
 
 PREFIX="${PREFIX:-}"
 NVIM_VERSION="${NVIM_VERSION:-stable}"
+NVIM_TARBALL="${NVIM_TARBALL:-}"
+NAVIVIM_SKIP_NVIM="${NAVIVIM_SKIP_NVIM:-0}"
+NAVIVIM_SKIP_PLUGINS="${NAVIVIM_SKIP_PLUGINS:-0}"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DO_APT=1
 SYSTEM=0
@@ -119,23 +129,36 @@ command -v fd >/dev/null 2>&1 || { echo "Missing required tool: fd (fd-find)" >&
 # Debian stable ships 0.10 (too old: mason-lspconfig v2, gitsigns, and
 # nvim-lspconfig now need 0.11+). Pinning Neovim to Debian testing would
 # drag testing libc onto a stable base — the tarball avoids that entirely.
-if [ "$NVIM_VERSION" = "stable" ]; then
-  NVIM_TAG="$(curl -fsSL -o /dev/null -w '%{url_effective}' \
-    https://github.com/neovim/neovim/releases/latest | grep -o '[^/]*$')"
+if [ "$NAVIVIM_SKIP_NVIM" = "1" ]; then
+  log "Skipping Neovim install (NAVIVIM_SKIP_NVIM=1) — binary already in place."
 else
-  NVIM_TAG="$NVIM_VERSION"
-fi
-log "Neovim release: $NVIM_TAG ($NVIM_ARCH) -> $PREFIX"
+  if [ -n "$NVIM_TARBALL" ]; then
+    # distro installers stage the tarball offline: use it, don't download.
+    [ -f "$NVIM_TARBALL" ] || { echo "NVIM_TARBALL not found: $NVIM_TARBALL" >&2; exit 1; }
+    log "Using staged Neovim tarball: $NVIM_TARBALL"
+    cp -a "$NVIM_TARBALL" "$TMPDIR/nvim.tar.gz"
+  else
+    if [ "$NVIM_VERSION" = "stable" ]; then
+      NVIM_TAG="$(curl -fsSL -o /dev/null -w '%{url_effective}' \
+        https://github.com/neovim/neovim/releases/latest | grep -o '[^/]*$')"
+    else
+      NVIM_TAG="$NVIM_VERSION"
+    fi
+    log "Neovim release: $NVIM_TAG ($NVIM_ARCH) -> $PREFIX"
 
-curl -fsSL -o "$TMPDIR/nvim.tar.gz" \
-  "https://github.com/neovim/neovim/releases/download/${NVIM_TAG}/nvim-linux-${NVIM_ARCH}.tar.gz"
-tar -xzf "$TMPDIR/nvim.tar.gz" -C "$TMPDIR"
-mkdir -p "$PREFIX"
-# Tarball extracts to nvim-linux-<arch>/; merge its bin/lib/share into PREFIX.
-cp -a "$TMPDIR"/nvim-linux-"${NVIM_ARCH}"/* "$PREFIX"/
-mkdir -p "$PREFIX/bin"
-log "Neovim version installed:"
-"$PREFIX/bin/nvim" --version | head -n 1
+    curl -fsSL -o "$TMPDIR/nvim.tar.gz" \
+      "https://github.com/neovim/neovim/releases/download/${NVIM_TAG}/nvim-linux-${NVIM_ARCH}.tar.gz"
+  fi
+  tar -xzf "$TMPDIR/nvim.tar.gz" -C "$TMPDIR"
+  [ -d "$TMPDIR/nvim-linux-${NVIM_ARCH}" ] \
+    || { echo "tarball arch mismatch: expected nvim-linux-${NVIM_ARCH}" >&2; exit 1; }
+  mkdir -p "$PREFIX"
+  # Tarball extracts to nvim-linux-<arch>/; merge its bin/lib/share into PREFIX.
+  cp -a "$TMPDIR"/nvim-linux-"${NVIM_ARCH}"/* "$PREFIX"/
+  mkdir -p "$PREFIX/bin"
+  log "Neovim version installed:"
+  "$PREFIX/bin/nvim" --version | head -n 1
+fi
 
 case ":$PATH:" in
   *":$PREFIX/bin:"*) ;;
@@ -178,7 +201,10 @@ fi
 # User mode rolls forward (sync = latest, updates lazy-lock.json — commit it).
 # System/ISO mode restores exactly the locked versions for reproducible builds,
 # against a throwaway config pointing at the repo (never touches $HOME).
-if [ "$SYSTEM" -eq 1 ]; then
+# Offline installs skip this step entirely — first nvim launch syncs.
+if [ "$NAVIVIM_SKIP_PLUGINS" = "1" ]; then
+  log "Skipping plugin restore (NAVIVIM_SKIP_PLUGINS=1) — first launch syncs."
+elif [ "$SYSTEM" -eq 1 ]; then
   log "Restoring locked plugins (build-time smoke test)..."
   SMOKE_HOME="$(mktemp -d)"
   ln -s "$REPO_DIR" "$SMOKE_HOME/nvim"
